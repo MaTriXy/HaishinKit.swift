@@ -1,17 +1,18 @@
-import HaishinKit
+import AVFoundation
 import CoreMedia
+import HaishinKit
 
 public class RTMPBroadcaster: RTMPConnection {
     public var streamName: String?
 
     public lazy var stream: RTMPStream = {
-        return RTMPStream(connection: self)
+        RTMPStream(connection: self)
     }()
 
     private var connecting: Bool = false
     private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.RTMPBroadcaster.lock")
 
-    public override init() {
+    override public init() {
         super.init()
         addEventListener(Event.RTMP_STATUS, selector: #selector(rtmpStatusEvent), observer: self)
     }
@@ -30,7 +31,7 @@ public class RTMPBroadcaster: RTMPConnection {
         }
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, withType: CMSampleBufferType, options: [NSObject: AnyObject]? = nil) {
+    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, withType: AVMediaType, options: [NSObject: AnyObject]? = nil) {
         stream.appendSampleBuffer(sampleBuffer, withType: withType)
     }
 
@@ -41,8 +42,9 @@ public class RTMPBroadcaster: RTMPConnection {
         }
     }
 
-    @objc func rtmpStatusEvent(_ status: Notification) {
-        let e: Event = Event.from(status)
+    @objc
+    func rtmpStatusEvent(_ status: Notification) {
+        let e = Event.from(status)
         guard
             let data: ASObject = e.data as? ASObject,
             let code: String = data["code"] as? String,

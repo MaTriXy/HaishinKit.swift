@@ -16,34 +16,41 @@ final class VideoIOComponent: IOComponent {
     #endif
 
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.VideoIOComponent.lock")
+
     var context: CIContext? {
         didSet {
-            objc_sync_enter(effects)
-            defer {
-                objc_sync_exit(effects)
-            }
             for effect in effects {
                 effect.ciContext = context
             }
         }
     }
+
+    #if os(iOS) || os(macOS)
+    var drawable: NetStreamDrawable? = nil {
+        didSet {
+            drawable?.orientation = orientation
+        }
+    }
+    #else
     var drawable: NetStreamDrawable?
+    #endif
+
     var formatDescription: CMVideoFormatDescription? {
         didSet {
             decoder.formatDescription = formatDescription
         }
     }
-    lazy var encoder: H264Encoder = H264Encoder()
-    lazy var decoder: H264Decoder = H264Decoder()
+    lazy var encoder = H264Encoder()
+    lazy var decoder = H264Decoder()
     lazy var queue: DisplayLinkedQueue = {
-        let queue: DisplayLinkedQueue = DisplayLinkedQueue()
+        let queue = DisplayLinkedQueue()
         queue.delegate = self
         return queue
     }()
 
-    private(set) var effects: Set<VisualEffect> = []
+    private(set) var effects: Set<VideoEffect> = []
 
-    private var extent: CGRect = CGRect.zero {
+    private var extent = CGRect.zero {
         didSet {
             guard extent != oldValue else {
                 return
@@ -108,6 +115,7 @@ final class VideoIOComponent: IOComponent {
 
     var orientation: AVCaptureVideoOrientation = .portrait {
         didSet {
+            drawable?.orientation = orientation
             guard orientation != oldValue else {
                 return
             }
@@ -116,8 +124,10 @@ final class VideoIOComponent: IOComponent {
                 if torch {
                     setTorchMode(.on)
                 }
+                #if os(iOS)
+                connection.preferredVideoStabilizationMode = preferredVideoStabilizationMode
+                #endif
             }
-            drawable?.orientation = orientation
         }
     }
 
@@ -210,6 +220,19 @@ final class VideoIOComponent: IOComponent {
         }
     }
 
+    #if os(iOS)
+    var preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode = .auto {
+        didSet {
+            guard preferredVideoStabilizationMode != oldValue else {
+                return
+            }
+            for connection in output.connections {
+                connection.preferredVideoStabilizationMode = preferredVideoStabilizationMode
+            }
+        }
+    }
+    #endif
+
     private var _output: AVCaptureVideoDataOutput?
     var output: AVCaptureVideoDataOutput! {
         get {
@@ -270,6 +293,8 @@ final class VideoIOComponent: IOComponent {
         #if os(iOS)
         if let orientation: AVCaptureVideoOrientation = DeviceUtil.videoOrientation(by: UIDevice.current.orientation) {
             self.orientation = orientation
+        } else if let defaultOrientation = RTMPStream.defaultOrientation {
+            self.orientation = defaultOrientation
         }
         #endif
     }
@@ -299,9 +324,16 @@ final class VideoIOComponent: IOComponent {
 
         input = try AVCaptureDeviceInput(device: camera)
         mixer.session.addOutput(output)
-        for connection in output.connections where connection.isVideoOrientationSupported {
-            connection.videoOrientation = orientation
+
+        for connection in output.connections {
+            if connection.isVideoOrientationSupported {
+                connection.videoOrientation = orientation
+            }
+            #if os(iOS)
+            connection.preferredVideoStabilizationMode = preferredVideoStabilizationMode
+            #endif
         }
+
         output.setSampleBufferDelegate(self, queue: lockQueue)
 
         fps *= 1
@@ -322,6 +354,7 @@ final class VideoIOComponent: IOComponent {
             logger.error("while setting torch: \(error)")
         }
     }
+
     func dispose() {
         if Thread.isMainThread {
             self.drawable?.attachStream(nil)
@@ -351,10 +384,15 @@ final class VideoIOComponent: IOComponent {
             return
         }
 
-        CVPixelBufferLockBaseAddress(buffer, [])
-        defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
-
         var imageBuffer: CVImageBuffer?
+
+        CVPixelBufferLockBaseAddress(buffer, [])
+        defer {
+            CVPixelBufferUnlockBaseAddress(buffer, [])
+            if let imageBuffer = imageBuffer {
+                CVPixelBufferUnlockBaseAddress(imageBuffer, [])
+            }
+        }
 
         if drawable != nil || !effects.isEmpty {
             let image: CIImage = effect(buffer, info: sampleBuffer)
@@ -369,9 +407,6 @@ final class VideoIOComponent: IOComponent {
                 #endif
                 if let imageBuffer = imageBuffer {
                     CVPixelBufferLockBaseAddress(imageBuffer, [])
-                    defer {
-                        CVPixelBufferUnlockBaseAddress(imageBuffer, [])
-                    }
                 }
                 context?.render(image, to: imageBuffer ?? buffer)
             }
@@ -384,31 +419,24 @@ final class VideoIOComponent: IOComponent {
             duration: sampleBuffer.duration
         )
 
-        mixer?.recorder.appendSampleBuffer(sampleBuffer, mediaType: .video)
+        mixer?.recorder.appendPixelBuffer(imageBuffer ?? buffer, withPresentationTime: sampleBuffer.presentationTimeStamp)
     }
 
+    @inline(__always)
     func effect(_ buffer: CVImageBuffer, info: CMSampleBuffer?) -> CIImage {
-        var image: CIImage = CIImage(cvPixelBuffer: buffer)
+        var image = CIImage(cvPixelBuffer: buffer)
         for effect in effects {
             image = effect.execute(image, info: info)
         }
         return image
     }
 
-    func registerEffect(_ effect: VisualEffect) -> Bool {
-        objc_sync_enter(effects)
-        defer {
-            objc_sync_exit(effects)
-        }
+    func registerEffect(_ effect: VideoEffect) -> Bool {
         effect.ciContext = context
         return effects.insert(effect).inserted
     }
 
-    func unregisterEffect(_ effect: VisualEffect) -> Bool {
-        objc_sync_enter(effects)
-        defer {
-            objc_sync_exit(effects)
-        }
+    func unregisterEffect(_ effect: VideoEffect) -> Bool {
         effect.ciContext = nil
         return effects.remove(effect) != nil
     }
@@ -431,7 +459,11 @@ extension VideoIOComponent: VideoDecoderDelegate {
 extension VideoIOComponent: DisplayLinkedQueueDelegate {
     // MARK: DisplayLinkedQueue
     func queue(_ buffer: CMSampleBuffer) {
-        mixer?.audioIO.playback.startQueueIfNeed()
         drawable?.draw(image: CIImage(cvPixelBuffer: buffer.imageBuffer!))
+        mixer?.delegate?.didOutputVideo(buffer)
+    }
+
+    func empty() {
+        mixer?.didBufferEmpty(self)
     }
 }

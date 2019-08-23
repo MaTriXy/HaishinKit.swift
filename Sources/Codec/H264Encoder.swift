@@ -1,6 +1,6 @@
 import AVFoundation
-import VideoToolbox
 import CoreFoundation
+import VideoToolbox
 
 protocol VideoEncoderDelegate: class {
     func didSetFormatDescription(video formatDescription: CMFormatDescription?)
@@ -131,19 +131,7 @@ final class H264Encoder: NSObject {
     }
     weak var delegate: VideoEncoderDelegate?
 
-    internal(set) var running: Bool = false
-    private var supportedProperty: [AnyHashable: Any]? = nil {
-        didSet {
-            guard logger.isEnabledFor(level: .info) else {
-                return
-            }
-            var keys: [String] = []
-            for (key, _) in supportedProperty ?? [:] {
-                keys.append(key.description)
-            }
-            logger.info(keys.joined(separator: ", "))
-        }
-    }
+    private(set) var isRunning: Atomic<Bool> = .init(false)
     private(set) var status: OSStatus = noErr
     private var attributes: [NSString: AnyObject] {
         var attributes: [NSString: AnyObject] = H264Encoder.defaultAttributes
@@ -154,7 +142,7 @@ final class H264Encoder: NSObject {
     private var invalidateSession: Bool = true
     private var lastImageBuffer: CVImageBuffer?
 
-    // @see: https: //developer.apple.com/library/mac/releasenotes/General/APIDiffsMacOSX10_8/VideoToolbox.html
+    // @see: https://developer.apple.com/library/mac/releasenotes/General/APIDiffsMacOSX10_8/VideoToolbox.html
     private var properties: [NSString: NSObject] {
         let isBaseline: Bool = profileLevel.contains("Baseline")
         var properties: [NSString: NSObject] = [
@@ -224,7 +212,6 @@ final class H264Encoder: NSObject {
                 invalidateSession = false
                 status = VTSessionSetProperties(_session!, propertyDictionary: properties as CFDictionary)
                 status = VTCompressionSessionPrepareToEncodeFrames(_session!)
-                supportedProperty = _session?.copySupportedPropertyDictionary()
             }
             return _session
         }
@@ -237,7 +224,7 @@ final class H264Encoder: NSObject {
     }
 
     func encodeImageBuffer(_ imageBuffer: CVImageBuffer, presentationTimeStamp: CMTime, duration: CMTime) {
-        guard running && locked == 0 else {
+        guard isRunning.value && locked == 0 else {
             return
         }
         if invalidateSession {
@@ -275,10 +262,13 @@ final class H264Encoder: NSObject {
     }
 
 #if os(iOS)
-    @objc func applicationWillEnterForeground(_ notification: Notification) {
+    @objc
+    private func applicationWillEnterForeground(_ notification: Notification) {
         invalidateSession = true
     }
-    @objc func didAudioSessionInterruption(_ notification: Notification) {
+
+    @objc
+    private func didAudioSessionInterruption(_ notification: Notification) {
         guard
             let userInfo: [AnyHashable: Any] = notification.userInfo,
             let value: NSNumber = userInfo[AVAudioSessionInterruptionTypeKey] as? NSNumber,
@@ -299,7 +289,7 @@ extension H264Encoder: Running {
     // MARK: Running
     func startRunning() {
         lockQueue.async {
-            self.running = true
+            self.isRunning.mutate { $0 = true }
 #if os(iOS)
             NotificationCenter.default.addObserver(
                 self,
@@ -325,7 +315,8 @@ extension H264Encoder: Running {
 #if os(iOS)
             NotificationCenter.default.removeObserver(self)
 #endif
-            self.running = false
+            OSAtomicAnd32Barrier(0, &self.locked)
+            self.isRunning.mutate { $0 = false }
         }
     }
 }
