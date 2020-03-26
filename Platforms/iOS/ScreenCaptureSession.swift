@@ -1,6 +1,11 @@
+#if os(iOS)
+
 import AVFoundation
 import CoreImage
+
+#if os(iOS)
 import UIKit
+#endif
 
 public protocol ScreenCaptureOutputPixelBufferDelegate: class {
     func didSet(size: CGSize)
@@ -13,8 +18,13 @@ extension CGRect {
     }
 }
 
+public protocol CustomCaptureSession: Running {
+    var attributes: [NSString: NSObject] { get }
+    var delegate: ScreenCaptureOutputPixelBufferDelegate? { get set }
+}
+
 // MARK: -
-open class ScreenCaptureSession: NSObject {
+open class ScreenCaptureSession: NSObject, CustomCaptureSession {
     static let defaultFrameInterval: Int = 2
     static let defaultAttributes: [NSString: NSObject] = [
         kCVPixelBufferPixelFormatTypeKey: NSNumber(value: kCVPixelFormatType_32BGRA),
@@ -36,7 +46,7 @@ open class ScreenCaptureSession: NSObject {
     private var shared: UIApplication?
     private var viewToCapture: UIView?
     public var afterScreenUpdates: Bool = false
-    private var context = CIContext(options: convertToOptionalCIContextOptionDictionary([convertFromCIContextOption(CIContextOption.useSoftwareRenderer): NSNumber(value: false)]))
+    private var context = CIContext(options: [.useSoftwareRenderer: NSNumber(value: false)])
     private let semaphore = DispatchSemaphore(value: 1)
     private let lockQueue = DispatchQueue(
         label: "com.haishinkit.HaishinKit.ScreenCaptureSession.lock", qos: .userInteractive, attributes: []
@@ -54,7 +64,7 @@ open class ScreenCaptureSession: NSObject {
         }
     }
     private var scale: CGFloat {
-        return enabledScale ? UIScreen.main.scale : 1.0
+        enabledScale ? UIScreen.main.scale : 1.0
     }
 
     private var _pixelBufferPool: CVPixelBufferPool?
@@ -169,13 +179,4 @@ extension ScreenCaptureSession: Running {
     }
 }
 
-// Helper function inserted by Swift 4.2 migrator.
-private func convertToOptionalCIContextOptionDictionary(_ input: [String: Any]?) -> [CIContextOption: Any]? {
-	guard let input = input else { return nil }
-	return Dictionary(uniqueKeysWithValues: input.map { key, value in (CIContextOption(rawValue: key), value) })
-}
-
-// Helper function inserted by Swift 4.2 migrator.
-private func convertFromCIContextOption(_ input: CIContextOption) -> String {
-	return input.rawValue
-}
+#endif

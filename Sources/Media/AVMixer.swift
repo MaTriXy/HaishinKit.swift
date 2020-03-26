@@ -11,7 +11,7 @@ protocol AVMixerDelegate: class {
     func didOutputVideo(_ buffer: CMSampleBuffer)
 }
 
-public class AVMixer: NSObject {
+public class AVMixer {
     public static let bufferEmpty: Notification.Name = .init("AVMixerBufferEmpty")
 
     public static let defaultFPS: Float64 = 30
@@ -19,48 +19,75 @@ public class AVMixer: NSObject {
         kCVPixelBufferPixelFormatTypeKey: NSNumber(value: kCVPixelFormatType_32BGRA)
     ]
 
-    #if os(iOS)
-    static let supportedSettingsKeys: [String] = [
-        "fps",
-        "sessionPreset",
-        "continuousAutofocus",
-        "continuousExposure",
-        "preferredVideoStabilizationMode"
-    ]
+    #if os(iOS) || os(macOS)
+    public enum Option: String, KeyPathRepresentable, CaseIterable {
+        case fps
+        case sessionPreset
+        case isVideoMirrored
+        case continuousAutofocus
+        case continuousExposure
 
-    @objc var preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode {
-        get { return videoIO.preferredVideoStabilizationMode }
+        #if os(iOS)
+        case preferredVideoStabilizationMode
+        #endif
+
+        public var keyPath: AnyKeyPath {
+            switch self {
+            case .fps:
+                return \AVMixer.fps
+            case .sessionPreset:
+                return \AVMixer.sessionPreset
+            case .continuousAutofocus:
+                return \AVMixer.continuousAutofocus
+            case .continuousExposure:
+                return \AVMixer.continuousExposure
+            case .isVideoMirrored:
+                return \AVMixer.isVideoMirrored
+            #if os(iOS)
+            case .preferredVideoStabilizationMode:
+                return \AVMixer.preferredVideoStabilizationMode
+            #endif
+            }
+        }
+    }
+    #else
+    public struct Option: KeyPathRepresentable {
+        public static var allCases: [AVMixer.Option] = []
+        public var keyPath: AnyKeyPath
+        // swiftlint:disable nesting
+        public typealias AllCases = [Option]
+    }
+    #endif
+
+    #if os(iOS)
+    var preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode {
+        get { videoIO.preferredVideoStabilizationMode }
         set { videoIO.preferredVideoStabilizationMode = newValue }
     }
-    #elseif os(macOS)
-    static let supportedSettingsKeys: [String] = [
-        "fps",
-        "sessionPreset",
-        "continuousAutofocus",
-        "continuousExposure"
-    ]
-    #else
-    static let supportedSettingsKeys: [String] = [
-    ]
     #endif
 
     #if os(iOS) || os(macOS)
-    @objc var fps: Float64 {
-        get { return videoIO.fps }
+    var fps: Float64 {
+        get { videoIO.fps }
         set { videoIO.fps = newValue }
     }
 
-    @objc var continuousExposure: Bool {
-        get { return videoIO.continuousExposure }
+    var isVideoMirrored: Bool {
+        get { videoIO.isVideoMirrored }
+        set { videoIO.isVideoMirrored = newValue }
+    }
+
+    var continuousExposure: Bool {
+        get { videoIO.continuousExposure }
         set { videoIO.continuousExposure = newValue }
     }
 
-    @objc var continuousAutofocus: Bool {
-        get { return videoIO.continuousAutofocus }
+    var continuousAutofocus: Bool {
+        get { videoIO.continuousAutofocus }
         set { videoIO.continuousAutofocus = newValue }
     }
 
-    @objc var sessionPreset: AVCaptureSession.Preset = .default {
+    var sessionPreset: AVCaptureSession.Preset = .default {
         didSet {
             guard sessionPreset != oldValue else {
                 return
@@ -76,7 +103,7 @@ public class AVMixer: NSObject {
         get {
             if _session == nil {
                 _session = AVCaptureSession()
-                _session!.sessionPreset = .default
+                _session?.sessionPreset = .default
             }
             return _session!
         }
@@ -85,6 +112,12 @@ public class AVMixer: NSObject {
         }
     }
     #endif
+
+    var settings: Setting<AVMixer, Option> = [:] {
+        didSet {
+            settings.observer = self
+        }
+    }
 
     weak var delegate: AVMixerDelegate?
 
@@ -115,6 +148,10 @@ public class AVMixer: NSObject {
 
     deinit {
         dispose()
+    }
+
+    public init() {
+        settings.observer = self
     }
 
     public func dispose() {
@@ -151,18 +188,14 @@ extension AVMixer {
 }
 
 extension AVMixer {
-    public func startPlaying(_ audioEngine: AVAudioEngine?) {
-        audioIO.audioEngine = audioEngine
-        audioIO.encoder.delegate = audioIO
-        videoIO.queue.startRunning()
-        videoIO.decoder.startRunning()
+    public func startDecoding(_ audioEngine: AVAudioEngine?) {
+        audioIO.startDecoding(audioEngine)
+        videoIO.startDecoding()
     }
 
-    public func stopPlaying() {
-        audioIO.audioEngine = nil
-        audioIO.encoder.delegate = nil
-        videoIO.queue.stopRunning()
-        videoIO.decoder.stopRunning()
+    public func stopDecoding() {
+        audioIO.stopDecoding()
+        videoIO.stopDecoding()
     }
 }
 
@@ -170,7 +203,7 @@ extension AVMixer {
 extension AVMixer: Running {
     // MARK: Running
     public var isRunning: Atomic<Bool> {
-        return .init(session.isRunning)
+        .init(session.isRunning)
     }
 
     public func startRunning() {
@@ -193,7 +226,7 @@ extension AVMixer: Running {
 extension AVMixer: Running {
     // MARK: Running
     public var isRunning: Atomic<Bool> {
-        return .init(false)
+        .init(false)
     }
 
     public func startRunning() {

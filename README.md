@@ -43,14 +43,15 @@
   - tvOS can't publish Camera and Microphone. Available playback feature.
 - [x] Hardware acceleration for H264 video encoding, AAC audio encoding
 - [x] Support "Allow app extension API only" option
-- [x] Support GPUImage framework (~> 0.5.12)
-  - https://github.com/shogo4405/GPUHaishinKit.swift/blob/master/README.md
+- [ ] ~~Support GPUImage framework (~> 0.5.12)~~
+  - ~~https://github.com/shogo4405/GPUHaishinKit.swift/blob/master/README.md~~
 - [ ] ~~Objective-C Bridging~~
 
 ## Requirements
 |-|iOS|OSX|tvOS|XCode|Swift|CocoaPods|Carthage|
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
-0.11.0+|8.0+|10.11+|10.2+|10.0+|5.0|1.5.0+|0.29.0+|
+|1.0.0+|8.0+|10.11+|10.2+|11.0+|5.0+|1.5.0+|0.29.0+|
+|0.11.0+|8.0+|10.11+|10.2+|10.0+|5.0|1.5.0+|0.29.0+|
 |0.10.0+|8.0+|10.11+|10.2+|10.0+|4.2|1.5.0+|0.29.0+|
 
 ## Cocoa Keys
@@ -73,7 +74,7 @@ source 'https://github.com/CocoaPods/Specs.git'
 use_frameworks!
 
 def import_pods
-    pod 'HaishinKit', '~> 0.11.7'
+    pod 'HaishinKit', '~> 1.0.7'
 end
 
 target 'Your Target'  do
@@ -83,7 +84,7 @@ end
 ```
 ### Carthage
 ```
-github "shogo4405/HaishinKit.swift" ~> 0.11.7
+github "shogo4405/HaishinKit.swift" ~> 1.0.7
 ```
 
 ## License
@@ -104,16 +105,19 @@ Make sure you setup and activate your AVAudioSession.
 import AVFoundation
 let session = AVAudioSession.sharedInstance()
 do {
-    try session.setPreferredSampleRate(44_100)
     // https://stackoverflow.com/questions/51010390/avaudiosession-setcategory-swift-4-2-ios-12-play-sound-on-silent
     if #available(iOS 10.0, *) {
         try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
     } else {
-        session.perform(NSSelectorFromString("setCategory:withOptions:error:"), with: AVAudioSession.Category.playAndRecord, with:  [AVAudioSession.CategoryOptions.allowBluetooth])
+        session.perform(NSSelectorFromString("setCategory:withOptions:error:"), with: AVAudioSession.Category.playAndRecord, with: [
+            AVAudioSession.CategoryOptions.allowBluetooth,
+            AVAudioSession.CategoryOptions.defaultToSpeaker]
+        )
+        try session.setMode(.default)
     }
-    try session.setMode(AVAudioSessionModeDefault)
     try session.setActive(true)
 } catch {
+    print(error)
 }
 ```
 ## RTMP Usage
@@ -143,45 +147,26 @@ rtmpStream.publish("streamName")
 
 ### Settings
 ```swift
-let sampleRate:Double = 44_100
-
-// see: #58
-#if(iOS)
-let session = AVAudioSession.sharedInstance()
-do {
-    try session.setPreferredSampleRate(44_100)
-    // https://stackoverflow.com/questions/51010390/avaudiosession-setcategory-swift-4-2-ios-12-play-sound-on-silent
-    if #available(iOS 10.0, *) {
-        try session.setCategory(.playAndRecord, mode: .default, options: [.allowBluetooth])
-    } else {
-        session.perform(NSSelectorFromString("setCategory:withOptions:error:"), with: AVAudioSession.Category.playAndRecord, with:  [AVAudioSession.CategoryOptions.allowBluetooth])
-    }
-    try session.setActive(true)
-} catch {
-}
-#endif
-
 var rtmpStream = RTMPStream(connection: rtmpConnection)
 
 rtmpStream.captureSettings = [
-    "fps": 30, // FPS
-    "sessionPreset": AVCaptureSession.Preset.medium.rawValue, // input video width/height
-    "continuousAutofocus": false, // use camera autofocus mode
-    "continuousExposure": false, //  use camera exposure mode
-    // "preferredVideoStabilizationMode": AVCaptureVideoStabilizationMode.auto.rawValue
+    .fps: 30, // FPS
+    .sessionPreset: AVCaptureSession.Preset.medium, // input video width/height
+    // .isVideoMirrored: false,
+    // .continuousAutofocus: false, // use camera autofocus mode
+    // .continuousExposure: false, //  use camera exposure mode
+    // .preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode.auto
 ]
 rtmpStream.audioSettings = [
-    "muted": false, // mute audio
-    "bitrate": 32 * 1024,
-    "sampleRate": sampleRate, 
+    .muted: false, // mute audio
+    .bitrate: 32 * 1000,
 ]
 rtmpStream.videoSettings = [
-    "width": 640, // video output width
-    "height": 360, // video output height
-    "bitrate": 160 * 1024, // video output bitrate
-    // "dataRateLimits": [160 * 1024 / 8, 1], optional kVTCompressionPropertyKey_DataRateLimits property
-    "profileLevel": kVTProfileLevel_H264_Baseline_3_1, // H264 Profile require "import VideoToolbox"
-    "maxKeyFrameIntervalDuration": 2, // key frame / sec
+    .width: 640, // video output width
+    .height: 360, // video output height
+    .bitrate: 160 * 1000, // video output bitrate
+    .profileLevel: kVTProfileLevel_H264_Baseline_3_1, // H264 Profile require "import VideoToolbox"
+    .maxKeyFrameIntervalDuration: 2, // key frame / sec
 ]
 // "0" means the same of input
 rtmpStream.recorderSettings = [

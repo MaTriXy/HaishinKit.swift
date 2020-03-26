@@ -1,12 +1,12 @@
 Pod::Spec.new do |s|
 
   s.name          = "HaishinKit"
-  s.version       = "0.11.7"
+  s.version       = "1.0.7"
   s.summary       = "Camera and Microphone streaming library via RTMP, HLS for iOS, macOS, tvOS."
   s.swift_version = "5.0"
 
   s.description  = <<-DESC
-  HaishinKit (formerly lf). Camera and Microphone streaming library via RTMP, HLS for iOS, macOS, tvOS.
+  HaishinKit. Camera and Microphone streaming library via RTMP, HLS for iOS, macOS, tvOS.
   DESC
 
   s.homepage     = "https://github.com/shogo4405/HaishinKit.swift"
@@ -26,7 +26,7 @@ Pod::Spec.new do |s|
   s.tvos.source_files = "Platforms/tvOS/*.{h,swift}"
 
   s.source_files = "Sources/**/*.swift"
-  s.dependency 'Logboard', '~> 2.1.0'
+  s.dependency 'Logboard', '~> 2.1.2'
 
   # fix GL deprecation warning
   s.pod_target_xcconfig = { "SWIFT_ACTIVE_COMPILATION_CONDITIONS" => "GLES_SILENCE_DEPRECATION" }

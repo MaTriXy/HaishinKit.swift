@@ -18,7 +18,7 @@ final class CRC32 {
     }
 
     func calculate(_ data: Data) -> UInt32 {
-        return calculate(data, seed: nil)
+        calculate(data, seed: nil)
     }
 
     func calculate(_ data: Data, seed: UInt32?) -> UInt32 {
@@ -30,9 +30,9 @@ final class CRC32 {
     }
 }
 
-extension CRC32: CustomStringConvertible {
-    // MARK: CustomStringConvertible
-    var description: String {
-        return Mirror(reflecting: self).description
+extension CRC32: CustomDebugStringConvertible {
+    // MARK: CustomDebugStringConvertible
+    var debugDescription: String {
+        Mirror(reflecting: self).debugDescription
     }
 }

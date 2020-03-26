@@ -38,7 +38,7 @@ class MP4Box {
     }
 
     var leafNode: Bool {
-        return false
+        false
     }
 
     fileprivate(set) var type: String = "undf"
@@ -64,7 +64,7 @@ class MP4Box {
     }
 
     func getBoxes(byName: String) -> [MP4Box] {
-        return []
+        []
     }
 
     func clear() {
@@ -79,20 +79,19 @@ class MP4Box {
     }
 }
 
-extension MP4Box: CustomStringConvertible {
-    // MARK: CustomStringConvertible
-    var description: String {
-        return Mirror(reflecting: self).description
+extension MP4Box: CustomDebugStringConvertible {
+    // MARK: CustomDebugStringConvertible
+    var debugDescription: String {
+        Mirror(reflecting: self).debugDescription
     }
 }
 
 // MARK: -
 class MP4ContainerBox: MP4Box {
-
     fileprivate var children: [MP4Box] = []
 
     override var leafNode: Bool {
-        return false
+        false
     }
 
     override func load(_ file: FileHandle) throws -> UInt32 {
@@ -196,12 +195,12 @@ final class MP4SyncSampleBox: MP4Box {
 
 // MARK: -
 final class MP4TimeToSampleBox: MP4Box {
-    struct Entry: CustomStringConvertible {
+    struct Entry: CustomDebugStringConvertible {
         var sampleCount: UInt32 = 0
         var sampleDuration: UInt32 = 0
 
-        var description: String {
-            return Mirror(reflecting: self).description
+        var debugDescription: String {
+            Mirror(reflecting: self).debugDescription
         }
 
         init(sampleCount: UInt32, sampleDuration: UInt32) {
@@ -432,13 +431,13 @@ final class MP4SampleDescriptionBox: MP4ContainerBox {
 
 // MARK: -
 final class MP4SampleToChunkBox: MP4Box {
-    struct Entry: CustomStringConvertible {
+    struct Entry: CustomDebugStringConvertible {
         var firstChunk: UInt32 = 0
         var samplesPerChunk: UInt32 = 0
         var sampleDescriptionIndex: UInt32 = 0
 
-        var description: String {
-            return Mirror(reflecting: self).description
+        var debugDescription: String {
+            Mirror(reflecting: self).debugDescription
         }
 
         init(firstChunk: UInt32, samplesPerChunk: UInt32, sampleDescriptionIndex: UInt32) {
@@ -470,13 +469,13 @@ final class MP4SampleToChunkBox: MP4Box {
 
 // MARK: -
 final class MP4EditListBox: MP4Box {
-    struct Entry: CustomStringConvertible {
+    struct Entry: CustomDebugStringConvertible {
         var segmentDuration: UInt32 = 0
         var mediaTime: UInt32 = 0
         var mediaRate: UInt32 = 0
 
-        var description: String {
-            return Mirror(reflecting: self).description
+        var debugDescription: String {
+            Mirror(reflecting: self).debugDescription
         }
 
         init(segmentDuration: UInt32, mediaTime: UInt32, mediaRate: UInt32) {
@@ -513,7 +512,7 @@ final class MP4Reader: MP4ContainerBox {
     private(set) var url: URL
 
     var isEmpty: Bool {
-        return getBoxes(byName: "mdhd").isEmpty
+        getBoxes(byName: "mdhd").isEmpty
     }
 
     private var fileHandle: FileHandle?
@@ -529,11 +528,11 @@ final class MP4Reader: MP4ContainerBox {
     }
 
     func seek(toFileOffset: UInt64) {
-        return fileHandle!.seek(toFileOffset: toFileOffset)
+        fileHandle!.seek(toFileOffset: toFileOffset)
     }
 
     func readData(ofLength: Int) -> Data {
-        return fileHandle!.readData(ofLength: ofLength)
+        fileHandle!.readData(ofLength: ofLength)
     }
 
     func readData(ofBox: MP4Box) -> Data {
@@ -582,23 +581,23 @@ final class MP4TrakReader {
         return timerDriver
     }()
     private var currentOffset: UInt64 {
-        return UInt64(offset[cursor])
+        UInt64(offset[cursor])
     }
     private var currentIsKeyframe: Bool {
-        return keyframe[cursor] != nil
+        keyframe[cursor] != nil
     }
     private var currentDuration: Double {
-        return Double(totalTimeToSample) * 1000 / Double(timeScale)
+        Double(totalTimeToSample) * 1000 / Double(timeScale)
     }
     private var currentTimeToSample: Double {
-        return Double(timeToSample[cursor]) * 1000 / Double(timeScale)
+        Double(timeToSample[cursor]) * 1000 / Double(timeScale)
     }
     private var currentSampleSize: Int {
-        return Int((sampleSize.count == 1) ? sampleSize[0] : sampleSize[cursor])
+        Int((sampleSize.count == 1) ? sampleSize[0] : sampleSize[cursor])
     }
     private var cursor: Int = 0
     private var offset: [UInt32] = []
-    private var keyframe: [Int: Bool] = [: ]
+    private var keyframe: [Int: Bool] = [:]
     private var timeScale: UInt32 = 0
     private var sampleSize: [UInt32] = []
     private var timeToSample: [UInt32] = []
@@ -615,7 +614,7 @@ final class MP4TrakReader {
 
         let stss: MP4Box? = trak.getBoxes(byName: "stss").first
         if let stss: MP4SyncSampleBox = stss as? MP4SyncSampleBox {
-            var keyframes: [UInt32] = stss.entries
+            let keyframes: [UInt32] = stss.entries
             for i in 0..<keyframes.count {
                 keyframe[Int(keyframes[i]) - 1] = true
             }
@@ -623,7 +622,7 @@ final class MP4TrakReader {
 
         let stts: MP4Box? = trak.getBoxes(byName: "stts").first
         if let stts: MP4TimeToSampleBox = stts as? MP4TimeToSampleBox {
-            var timeToSample: [MP4TimeToSampleBox.Entry] = stts.entries
+            let timeToSample: [MP4TimeToSampleBox.Entry] = stts.entries
             for i in 0..<timeToSample.count {
                 let entry: MP4TimeToSampleBox.Entry = timeToSample[i]
                 for _ in 0..<entry.sampleCount {
@@ -639,8 +638,8 @@ final class MP4TrakReader {
 
         let stco: MP4Box = trak.getBoxes(byName: "stco").first!
         let stsc: MP4Box = trak.getBoxes(byName: "stsc").first!
-        var offsets: [UInt32] = (stco as! MP4ChunkOffsetBox).entries
-        var sampleToChunk: [MP4SampleToChunkBox.Entry] = (stsc as! MP4SampleToChunkBox).entries
+        let offsets: [UInt32] = (stco as! MP4ChunkOffsetBox).entries
+        let sampleToChunk: [MP4SampleToChunkBox.Entry] = (stsc as! MP4SampleToChunkBox).entries
 
         var index: Int = 0
         let count: Int = sampleToChunk.count
@@ -680,7 +679,7 @@ final class MP4TrakReader {
     }
 
     private func hasNext() -> Bool {
-        return cursor + 1 < offset.count
+        cursor + 1 < offset.count
     }
 
     private func next() {
@@ -716,9 +715,9 @@ extension MP4TrakReader: TimerDriverDelegate {
     }
 }
 
-extension MP4TrakReader: CustomStringConvertible {
-    // MARK: CustomStringConvertible
-    var description: String {
-        return Mirror(reflecting: self).description
+extension MP4TrakReader: CustomDebugStringConvertible {
+    // MARK: CustomDebugStringConvertible
+    var debugDescription: String {
+        Mirror(reflecting: self).debugDescription
     }
 }

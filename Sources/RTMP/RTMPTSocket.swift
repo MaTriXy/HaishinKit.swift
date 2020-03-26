@@ -28,18 +28,18 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
     }
 
     var timestamp: TimeInterval {
-        return handshake.timestamp
+        handshake.timestamp
     }
 
-    var readyState: RTMPSocket.ReadyState = .uninitialized {
+    var readyState: RTMPSocketReadyState = .uninitialized {
         didSet {
             delegate?.didSetReadyState(readyState)
         }
     }
 
-    private(set) var totalBytesIn: Int64 = 0
-    private(set) var totalBytesOut: Int64 = 0
-    private(set) var queueBytesOut: Int64 = 0
+    private(set) var totalBytesIn: Atomic<Int64> = .init(0)
+    private(set) var totalBytesOut: Atomic<Int64> = .init(0)
+    private(set) var queueBytesOut: Atomic<Int64> = .init(0)
     private var timer: Timer? {
         didSet {
             oldValue?.invalidate()
@@ -113,7 +113,7 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         if isDisconnected {
             let data: ASObject = (readyState == .handshakeDone) ?
                 RTMPConnection.Code.connectClosed.data("") : RTMPConnection.Code.connectFailed.data("")
-            events.append(Event(type: Event.RTMP_STATUS, bubbles: false, data: data))
+            events.append(Event(type: .rtmpStatus, bubbles: false, data: data))
         }
         guard let connectionID: String = connectionID else {
             return
@@ -122,7 +122,6 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
     }
 
     private func listen(data: Data?, response: URLResponse?, error: Error?) {
-
         lastResponse = Date()
 
         if logger.isEnabledFor(level: .trace) {
@@ -165,7 +164,7 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         }
 
         var buffer: [UInt8] = data.bytes
-        OSAtomicAdd64(Int64(buffer.count), &totalBytesIn)
+        totalBytesIn.mutate { $0 += Int64(buffer.count) }
         delay = buffer.remove(at: 0)
         inputBuffer.append(contentsOf: buffer)
 
@@ -289,6 +288,6 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
 // MARK: -
 extension RTMPTSocket: URLSessionTaskDelegate {
     func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
-        OSAtomicAdd64(bytesSent, &totalBytesOut)
+        totalBytesOut.mutate { $0 += bytesSent }
     }
 }
