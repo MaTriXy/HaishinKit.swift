@@ -13,11 +13,27 @@
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
-default_platform(:ios)
-
-platform :ios do
-  desc "Description of what the lane does"
-  lane :review do
-    sh("cd .. && bundle exec pod lib lint --allow-warnings")
+desc "[CI] Review PullRequest."
+lane :review do
+  spm(
+    command: "test",
+    package_path: "HaishinKit",
+  )
+  spm(
+    command: "test",
+    package_path: "SRTHaishinKit",
+  )
+  begin
+    danger(
+      danger_id: 'danger',
+      dangerfile: 'Dangerfile',
+      verbose: true
+    )
+  rescue
   end
+end
+
+desc "Creates documents."
+lane :document do
+  sh('cd ../ && sourcekitten doc --spm --module-name HaishinKit > HaishinKit.json && sourcekitten doc --spm --module-name SRTHaishinKit > SRTHaishinKit.json && jazzy --sourcekitten-sourcefile HaishinKit.json,SRTHaishinKit.json')
 end

@@ -1,253 +1,297 @@
-# HaishinKit (formerly lf)
-[![Platform](https://img.shields.io/cocoapods/p/HaishinKit.svg?style=flat)](http://cocoapods.org/pods/HaishinKit)
-![Language](https://img.shields.io/badge/language-Swift%204.0-orange.svg)
-[![CocoaPods](https://img.shields.io/cocoapods/v/HaishinKit.svg?style=flat)](http://cocoapods.org/pods/HaishinKit)
+# HaishinKit for iOS, macOS, tvOS, visionOS and [Android](https://github.com/shogo4405/HaishinKit.kt).
+[![GitHub Stars](https://img.shields.io/github/stars/shogo4405/HaishinKit.swift?style=social)](https://github.com/shogo4405/HaishinKit.swift/stargazers)
+[![Release](https://img.shields.io/github/v/release/shogo4405/HaishinKit.swift)](https://github.com/shogo4405/HaishinKit.swift/releases/latest)
+[![Platform Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fshogo4405%2FHaishinKit.swift%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/shogo4405/HaishinKit.swift)
+[![Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fshogo4405%2FHaishinKit.swift%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/shogo4405/HaishinKit.swift)
 [![GitHub license](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://raw.githubusercontent.com/shogo4405/HaishinKit.swift/master/LICENSE.md)
+[![GitHub Sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=ff69b4)](https://github.com/sponsors/shogo4405)
 
-* Camera and Microphone streaming library via RTMP, HLS for iOS, macOS, tvOS.
-* Issuesの言語は、英語か、日本語でお願いします！
+* Camera and Microphone streaming library via RTMP and SRT for iOS, macOS, tvOS and visionOS.
+* README.md contains unreleased content, which can be tested on the main branch.
+* [API Documentation](https://docs.haishinkit.com/swift/latest/)
 
-## Features
-### RTMP
+## 💖 Sponsors
+Do you need additional support? Technical support on Issues and Discussions is provided only to contributors and academic researchers of HaishinKit. By becoming a sponsor, we can provide the support you need.
+
+Sponsor: [$50 per month](https://github.com/sponsors/shogo4405): Technical support via GitHub Issues/Discussions with priority response.
+
+## 💬 Communication
+* GitHub Issues and Discussions are open spaces for communication among users and are available to everyone as long as [the code of conduct](https://github.com/shogo4405/HaishinKit.swift?tab=coc-ov-file) is followed.
+* Whether someone is a contributor to HaishinKit is mainly determined by their GitHub profile icon. If you are using the default icon, there is a chance your input might be overlooked, so please consider setting a custom one. It could be a picture of your pet, for example. Personally, I like cats.
+* If you want to support e-mail based communication without GitHub.
+  * Consulting fee is [$50](https://www.paypal.me/shogo4405/50USD)/1 incident. I'm able to response a few days.
+
+## 🌏 Related projects
+Project name    |Notes       |License
+----------------|------------|--------------
+[HaishinKit for Android.](https://github.com/shogo4405/HaishinKit.kt)|Camera and Microphone streaming library via RTMP for Android.|[BSD 3-Clause "New" or "Revised" License](https://github.com/shogo4405/HaishinKit.kt/blob/master/LICENSE.md)
+[HaishinKit for Flutter.](https://github.com/shogo4405/HaishinKit.dart)|Camera and Microphone streaming library via RTMP for Flutter.|[BSD 3-Clause "New" or "Revised" License](https://github.com/shogo4405/HaishinKit.dart/blob/master/LICENSE.md)
+
+## 🎨 Features
+### ✏️ [RTMP](https://github.com/shogo4405/HaishinKit.swift/tree/main/HaishinKit)
 - [x] Authentication
-- [x] Publish and Recording (H264/AAC)
+- [x] Publish and Recording
 - [x] _Playback (Beta)_
-- [x] Adaptive bitrate streaming
-  - [x] Handling (see also [#126](/../../issues/126))
-  - [x] Automatic drop frames
+- [x] [Adaptive bitrate streaming](../../issues/1308)
 - [ ] Action Message Format
   - [x] AMF0
   - [ ] AMF3
 - [x] SharedObject
 - [x] RTMPS
   - [x] Native (RTMP over SSL/TLS)
-  - [x] _Tunneled (RTMPT over SSL/TLS) (Technical Preview)_
-- [x] _RTMPT (Technical Preview)_
-- [x] _ReplayKit Live as a Broadcast Upload Extension (Technical Preview)_
+- [x] ReplayKit Live as a Broadcast Upload Extension
+- [x] [Enhanced RTMP](https://github.com/veovera/enhanced-rtmp)
 
-### HLS
-- [x] HTTPService
-- [x] HLS Publish
+### ✏️ [SRT(beta)](https://github.com/shogo4405/HaishinKit.swift/tree/main/SRTHaishinKit)
+- [x] Publish and Recording (H264/HEVC/AAC)
+- [x] Playback(beta)
+- [ ] mode
+  - [x] caller
+  - [x] listener
+  - [ ] rendezvous
+
+### ✏️ [MOQT(alpha)](https://github.com/shogo4405/HaishinKit.swift/tree/main/MoQTHaishinKit)
+> [!NOTE]
+> I am working on a preliminary implementation of MOQT for research purposes. If you're interested, please check out the repository.
+
+### 📹 Multi Streaming.
+Starting from version 2.0.0, multiple streams are supported, allowing live streaming to separate services. Views also support this, enabling the verification of raw video data
+```swift
+let mixer = MediaMixer()
+let stream0 = RTMPStream() // for Y Service.
+let stream1 = RTMPStream() // for F Service.
+
+let view = MTHKView()
+view.track = 0 // Video Track Number 0 or 1, UInt8.max.
+
+mixer.addOutput(stream0)
+mixer.addOutput(stream1)
+mixer.addOutput(view)
+
+let view2 = MTHKView()
+stream0.addOutput(view2)
+```
+
+### Offscreen Rendering.
+Through off-screen rendering capabilities, it is possible to display any text or bitmap on a video during broadcasting or viewing. This allows for various applications such as watermarking and time display.
+|Ingest|Playback|
+|:---:|:---:|
+|<img width="961" alt="" src="https://github.com/user-attachments/assets/aaf6c06f-d2de-43c1-a435-90907f370977">|<img width="849" alt="" src="https://github.com/user-attachments/assets/0a07b418-aa56-41cb-8e6d-e12596b25ae8">|
 
 ### Rendering
-|-|HKView|GLHKView|MTHKView|
-|-|:---:|:---:|:---:|
-|Engine|AVCaptureVideoPreviewLayer|OpenGL ES|Metal|
-|Publish|○|○|◯|
-|Playback|×|○|◯|
-|VIsualEffect|×|○|◯|
-|Condition|Stable|Stable|Beta|
+|Features|[PiPHKView](https://shogo4405.github.io/HaishinKit.swift/Classes/PiPHKView.html)|[MTHKView](https://shogo4405.github.io/HaishinKit.swift/Classes/MTHKView.html)|
+|-|:---:|:---:|
+|Engine|AVSampleBufferDisplayLayer|Metal|
+|Publish|✔|✔|
+|Playback|✔|✔|
+|VisualEffect|✔|✔|
+|MultiCamera|✔|✔|
+|PictureInPicture|✔|<br />|
 
 ### Others
-- [x] _Support tvOS 10.2+  (Technical Preview)_
-  - tvOS can't publish Camera and Microphone. Available playback feature.
-- [x] Hardware acceleration for H264 video encoding, AAC audio encoding
+- [x] tvOS 17.0 for AVCaptureSession.
+- [x] [Support multitasking camera access.](https://developer.apple.com/documentation/avfoundation/capture_setup/accessing_the_camera_while_multitasking)
 - [x] Support "Allow app extension API only" option
-- [ ] ~~Support GPUImage framework (~> 0.5.12)~~
-  - ~~https://github.com/shogo4405/GPUHaishinKit.swift/blob/master/README.md~~
-- [ ] ~~Objective-C Bridging~~
+- [x] Strict Concurrency 
 
-## Requirements
-|-|iOS|OSX|tvOS|XCode|Swift|CocoaPods|Carthage|
-|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
-|1.0.0+|8.0+|10.11+|10.2+|11.0+|5.0+|1.5.0+|0.29.0+|
-|0.11.0+|8.0+|10.11+|10.2+|10.0+|5.0|1.5.0+|0.29.0+|
-|0.10.0+|8.0+|10.11+|10.2+|10.0+|4.2|1.5.0+|0.29.0+|
+## 🐾 Examples
+Examples project are available for iOS, macOS(ARM), tvOS and visionOS.
+> [!IMPORTANT]
+> Please check if the same issue occurs with the latest Examples before posting it on GitHub Issues.
 
-## Cocoa Keys
+### Usage
+You can verify by changing the URL of the following file.
+https://github.com/shogo4405/HaishinKit.swift/blob/abf1883d25d0ba29e1d1d67ea9e3a3b5be61a196/Examples/Preference.swift#L1-L7
+```sh
+git clone https://github.com/shogo4405/HaishinKit.swift.git
+cd HaishinKit.swift
+open Examples/Examples.xcodeproj
+```
+
+## 🌏 Requirements
+
+### Development
+|Version|Xcode|Swift|
+|:----:|:----:|:----:|
+|2.0.0+|16.0+|5.10+|
+|1.9.0+|15.4+|5.10+|
+
+### OS
+|-|iOS|tvOS|macOS|visionOS|watchOS|
+|:----|:----:|:----:|:----:|:----:|:----:|
+|HaishinKit|13.0+|13.0+|10.15+|1.0+|-|
+|SRTHaishinKit|13.0+|13.0+|10.15+|1.0+|-|
+
+### Cocoa Keys
 Please contains Info.plist.
 
-iOS 10.0+
+**iOS 10.0+**
 * NSMicrophoneUsageDescription
 * NSCameraUsageDescription
 
-macOS 10.14+
+**macOS 10.14+**
 * NSMicrophoneUsageDescription
 * NSCameraUsageDescription
 
-## Installation
-*Please set up your project Swift 5.0. *
+**tvOS 17.0+**
+* NSMicrophoneUsageDescription
+* NSCameraUsageDescription
 
-### CocoaPods
-```rb
-source 'https://github.com/CocoaPods/Specs.git'
-use_frameworks!
+## 🔧 Installation
+* Using Swift Package Manager
+  - https://github.com/shogo4405/HaishinKit.swift
+* [Discontinued support for CocoaPods.](https://github.com/shogo4405/HaishinKit.swift/discussions/1672)
+* [Discontinued support for Carthage.](https://github.com/shogo4405/HaishinKit.swift/pull/1543)
 
-def import_pods
-    pod 'HaishinKit', '~> 1.0.7'
-end
-
-target 'Your Target'  do
-    platform :ios, '8.0'
-    import_pods
-end
-```
-### Carthage
-```
-github "shogo4405/HaishinKit.swift" ~> 1.0.7
-```
-
-## License
-BSD-3-Clause
-
-## Donation
-Paypal
- - https://www.paypal.me/shogo4405
-
-Bitcoin
-```txt
-1LP7Jo4VwAFdEisJSykBAtUyAusZjozSpw
-```
-
-## Prerequisites
-Make sure you setup and activate your AVAudioSession.
+## 📓 Settings
+### 🔧 Prerequisites
+Make sure you setup and activate your AVAudioSession iOS.
 ```swift
 import AVFoundation
+
 let session = AVAudioSession.sharedInstance()
 do {
-    // https://stackoverflow.com/questions/51010390/avaudiosession-setcategory-swift-4-2-ios-12-play-sound-on-silent
-    if #available(iOS 10.0, *) {
-        try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
-    } else {
-        session.perform(NSSelectorFromString("setCategory:withOptions:error:"), with: AVAudioSession.Category.playAndRecord, with: [
-            AVAudioSession.CategoryOptions.allowBluetooth,
-            AVAudioSession.CategoryOptions.defaultToSpeaker]
-        )
-        try session.setMode(.default)
-    }
+    try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
     try session.setActive(true)
 } catch {
     print(error)
 }
 ```
-## RTMP Usage
-Real Time Messaging Protocol (RTMP).
+
+### 📹 AVCaptureSession
 ```swift
-let rtmpConnection = RTMPConnection()
-let rtmpStream = RTMPStream(connection: rtmpConnection)
-rtmpStream.attachAudio(AVCaptureDevice.default(for: AVMediaType.audio)) { error in
-    // print(error)
+let mixer = MediaMixer()
+
+await mixer.setFrameRate(30)
+await mixer.setSessionPreset(AVCaptureSession.Preset.medium)
+
+// Do not call beginConfiguration() and commitConfiguration() internally within the scope of the method, as they are called internally.
+await mixer.configuration { session in
+  session.automaticallyConfiguresApplicationAudioSession = true
 }
-rtmpStream.attachCamera(DeviceUtil.device(withPosition: .back)) { error in
-    // print(error)
+```
+
+### 🔊 Audio
+#### [Device](https://docs.haishinkit.com/swift/latest/Classes/AudioDeviceUnit.html)
+Specifies the audio device settings.
+```swift
+let front = AVCaptureDevice.default(for: .audio)
+
+try? await mixer.attachAudio(front, track: 0) { audioDeviceUnit in }
+```
+
+#### [AudioMixerSettings](https://docs.haishinkit.com/swift/latest/Structs/AudioMixerSettings.html)
+If you want to mix multiple audio tracks, please enable the feature flag.
+```swift
+await mixer.setMultiTrackAudioMixingEnabled(true)
+```
+
+When you specify the sampling rate, it will perform resampling. Additionally, in the case of multiple channels, downsampling can be applied.
+```swift
+// Setting the value to 0 will be the same as the value specified in mainTrack.
+var settings = AudioMixerSettings(
+  sampleRate: Float64 = 44100,
+  channels: UInt32 = 0,
+)
+settings.tracks = [
+  0: .init(
+    isMuted: Bool = false,
+    downmix: Bool = true,
+    channelMap: [Int]? = nil
+  )
+]
+
+async mixer.setAudioMixerSettings(settings)
+```
+
+#### [AudioCodecSettings](https://docs.haishinkit.com/swift/latest/Structs/AudioCodecSettings.html)
+```swift
+var audioSettings = AudioCodecSettings()
+/// Specifies the bitRate of audio output.
+audioSettings.bitrate = 64 * 1000
+/// Specifies the mixes the channels or not. Currently, it supports input sources with 4, 5, 6, and 8 channels.
+audioSettings.downmix = true
+/// Specifies the map of the output to input channels.
+audioSettings.channelMap: [Int]? = nil
+
+await stream.setAudioSettings(audioSettings)
+```
+
+### 🎥 Video
+#### [Device](https://docs.haishinkit.com/swift/latest/Classes/VideoDeviceUnit.html)
+Specifies the video capture settings.
+```swift
+
+let front = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+do {
+  try await mixer.attachCamera(front, track: 0) { videoUnit in
+    videoUnit.isVideoMirrored = true
+    videoUnit.preferredVideoStabilizationMode = .standard
+    videoUnit.colorFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+  }
+} catch {
+  print(error)
 }
-
-let hkView = HKView(frame: view.bounds)
-hkView.videoGravity = AVLayerVideoGravity.resizeAspectFill
-hkView.attachStream(rtmpStream)
-
-// add ViewController#view
-view.addSubview(hkView)
-
-rtmpConnection.connect("rtmp://localhost/appName/instanceName")
-rtmpStream.publish("streamName")
-// if you want to record a stream.
-// rtmpStream.publish("streamName", type: .localRecord)
 ```
 
-### Settings
+#### [VideoMixerSettings](https://docs.haishinkit.com/swift/latest/Structs/VideoMixerSettings.html)
 ```swift
-var rtmpStream = RTMPStream(connection: rtmpConnection)
+var videoMixerSettings = VideoMixerSettings()
+/// Specifies the image rendering mode.
+videoMixerSettings.mode = .passthrough or .offscreen
+/// Specifies the muted indicies whether freeze video signal or not.
+videoMixerSettings.isMuted = false
+/// Specifies the main track number.
+videoMixerSettings.mainTrack = 0
 
-rtmpStream.captureSettings = [
-    .fps: 30, // FPS
-    .sessionPreset: AVCaptureSession.Preset.medium, // input video width/height
-    // .isVideoMirrored: false,
-    // .continuousAutofocus: false, // use camera autofocus mode
-    // .continuousExposure: false, //  use camera exposure mode
-    // .preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode.auto
-]
-rtmpStream.audioSettings = [
-    .muted: false, // mute audio
-    .bitrate: 32 * 1000,
-]
-rtmpStream.videoSettings = [
-    .width: 640, // video output width
-    .height: 360, // video output height
-    .bitrate: 160 * 1000, // video output bitrate
-    .profileLevel: kVTProfileLevel_H264_Baseline_3_1, // H264 Profile require "import VideoToolbox"
-    .maxKeyFrameIntervalDuration: 2, // key frame / sec
-]
-// "0" means the same of input
-rtmpStream.recorderSettings = [
-    AVMediaType.audio: [
-        AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-        AVSampleRateKey: 0,
-        AVNumberOfChannelsKey: 0,
-        // AVEncoderBitRateKey: 128000,
-    ],
-    AVMediaType.video: [
-        AVVideoCodecKey: AVVideoCodecH264,
-        AVVideoHeightKey: 0,
-        AVVideoWidthKey: 0,
-        /*
-        AVVideoCompressionPropertiesKey: [
-            AVVideoMaxKeyFrameIntervalDurationKey: 2,
-            AVVideoProfileLevelKey: AVVideoProfileLevelH264Baseline30,
-            AVVideoAverageBitRateKey: 512000
-        ]
-        */
-    ],
-]
-
-// 2nd arguemnt set false
-rtmpStream.attachAudio(AVCaptureDevice.default(for: AVMediaType.audio), automaticallyConfiguresApplicationAudioSession: false)
-
+await mixer.setVideoMixerSettings(videoMixerSettings)
 ```
-### Authentication
+
+#### [VideoCodecSettings](https://docs.haishinkit.com/swift/latest/Structs/VideoCodecSettings.html)
 ```swift
-var rtmpConnection = RTMPConnection()
-rtmpConnection.connect("rtmp://username:password@localhost/appName/instanceName")
+var videoSettings = VideoCodecSettings(
+  videoSize: .init(width: 854, height: 480),
+  profileLevel: kVTProfileLevel_H264_Baseline_3_1 as String,
+  bitRate: 640 * 1000,
+  maxKeyFrameIntervalDuration: 2,
+  scalingMode: .trim,
+  bitRateMode: .average,
+  allowFrameReordering: nil,
+  isHardwareEncoderEnabled: true
+)
+
+await stream.setVideoSettings(videoSettings)
 ```
 
-### Screen Capture
+### ⏺️ Recording
 ```swift
-// iOS
-rtmpStream.attachScreen(ScreenCaptureSession(shared: UIApplication.shared))
-// macOS
-rtmpStream.attachScreen(AVCaptureScreenInput(displayID: CGMainDisplayID()))
+// Specifies the recording settings. 0" means the same of input.
+let recorder = HKStreamRecorder()
+stream.addOutput(recorder)
+
+try await recorder.startRecording(fileName, settings: [
+  AVMediaType.audio: [
+    AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+    AVSampleRateKey: 0,
+    AVNumberOfChannelsKey: 0,
+    // AVEncoderBitRateKey: 128000,
+  ],
+  AVMediaType.video: [
+    AVVideoCodecKey: AVVideoCodecH264,
+    AVVideoHeightKey: 0,
+    AVVideoWidthKey: 0,
+    /*
+    AVVideoCompressionPropertiesKey: [
+      AVVideoMaxKeyFrameIntervalDurationKey: 2,
+      AVVideoProfileLevelKey: AVVideoProfileLevelH264Baseline30,
+      AVVideoAverageBitRateKey: 512000
+    ]
+    */
+  ]
+])
+
+try await recorder.stopRecording()
 ```
 
-## HTTP Usage
-HTTP Live Streaming (HLS). Your iPhone/Mac become a IP Camera. Basic snipet. You can see http://ip.address:8080/hello/playlist.m3u8 
-```swift
-var httpStream = HTTPStream()
-httpStream.attachCamera(DeviceUtil.device(withPosition: .back))
-httpStream.attachAudio(AVCaptureDevice.defaultDevice(withMediaType: AVMediaTypeAudio))
-httpStream.publish("hello")
-
-var hkView = HKView(frame: view.bounds)
-hkView.attachStream(httpStream)
-
-var httpService = HLSService(domain: "", type: "_http._tcp", name: "HaishinKit", port: 8080)
-httpService.startRunning()
-httpService.addHTTPStream(httpStream)
-
-// add ViewController#view
-view.addSubview(hkView)
-```
-
-## FAQ
-### How can I run example project?
-Please hit `carthage update` command. HaishinKit needs Logboard module via Carthage.
-```sh
-carthage update
-```
-
-### Do you support me via Email?
-Yes. Consulting fee is [$50](https://www.paypal.me/shogo4405/50USD)/1 incident. I don't recommend. 
-Please consider to use Issues.
-
-
-## Reference
-* Adobe’s Real Time Messaging Protocol
-  * http://www.adobe.com/content/dam/Adobe/en/devnet/rtmp/pdf/rtmp_specification_1.0.pdf
-* Action Message Format -- AMF 0
-  * http://wwwimages.adobe.com/content/dam/Adobe/en/devnet/amf/pdf/amf0-file-format-specification.pdf
-* Action Message Format -- AMF 3 
-  * http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/amf/pdf/amf-file-format-spec.pdf
-* Video File Format Specification Version 10
-  * https://www.adobe.com/content/dam/Adobe/en/devnet/flv/pdfs/video_file_format_spec_v10.pdf
-* Adobe Flash Video File Format Specification Version 10.1
-  * http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf
-
+## 📜 License
+BSD-3-Clause

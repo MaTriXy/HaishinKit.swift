@@ -1,6 +1,7 @@
 *.xcodeproj/xcuserdata/*
 *.xcworkspace/xcuserdata/*
 build
+.build
 *.xccheckout
 *.moved-aside
 *.xcuserstate
@@ -14,13 +15,18 @@ soe/bin/*
 soe/air/*
 soe/AIR_readme.txt
 
-build/lf.build/Release-iphoneos/lf.build/dgph
-
-Cartfile.resolved
 Carthage/*
 
-Package.resolved
-HaishinKit.xcodeproj/project.xcworkspace/xcuserdata/shogo.xcuserdatad/WorkspaceSettings.xcsettings
+.idea/
+.vscode/
+.swiftpm/
+
 *.xcsettings
 docs/undocumented.json
 fastlane/report.xml
+docs/docsets/HaishinKit.docset/Contents/Resources/Documents/undocumented.json
+HaishinKit.json
+SRTHaishinKit.json
+SRTHaishinKit/Vendor/SRT/OpenSSL/
+SRTHaishinKit/Vendor/SRT/srt/
+SRTHaishinKit/Vendor/SRT/Includes/
