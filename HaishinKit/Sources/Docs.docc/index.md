@@ -1,5 +1,8 @@
-# HaishinKit
-- This is the main module. It provides common functionality for live streaming and supports the RTMP protocol.
+# ``HaishinKit``
+This is the main module. This module supports the RTMP protocol.
+
+## Overview
+This is the main module. It provides common functionality for live streaming and supports the RTMP protocol.
 
 ## 📓 RTMP Usage
 ### Ingest
@@ -75,7 +78,9 @@ Task {
 ```
 
 ### Authentication
+It supports FME-compatible authentication. Some other services may use their own unique authentication methods, so connection may not be possible in those cases.
 ```swift
 var connection = RTMPConnection()
 connection.connect("rtmp://username:password@localhost/appName/instanceName")
 ```
+
